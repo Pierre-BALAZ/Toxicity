@@ -1,0 +1,17 @@
+{
+  "name": "TOXICITY — Toxicologie d'urgence",
+  "short_name": "TOXICITY",
+  "description": "Jeu pédagogique de toxicologie d'urgence pour les internes de DESMU (BMPM, Marseille).",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0b0e0f",
+  "theme_color": "#0b0e0f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
