@@ -1,5 +1,5 @@
 /* TOXICITY — service worker (offline app shell) */
-const CACHE = 'toxicity-v1';
+const CACHE = 'toxicity-v3';
 const CORE = [
   './',
   './index.html',
