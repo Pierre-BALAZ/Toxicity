@@ -386,6 +386,27 @@
   .backBtn{background:var(--panel2);color:#cfe;border:1px solid var(--line);padding:10px 16px;border-radius:8px}
   .nextBtn{background:var(--acc);color:#fff;border:none;padding:12px 20px;border-radius:8px;font-weight:700;margin-left:auto}
   .scroll::-webkit-scrollbar{width:10px}.scroll::-webkit-scrollbar-thumb{background:#22323a;border-radius:6px}
+  /* Plan des pièces (mini-carte du pavillon) */
+  #roomPlan{position:absolute;right:12px;bottom:12px;z-index:16;width:236px;max-width:46vw;background:rgba(13,19,21,.9);
+    border:1px solid var(--line);border-radius:10px;padding:8px 10px;box-shadow:0 12px 30px rgba(0,0,0,.55);display:none}
+  #roomPlan.show{display:block}
+  #roomPlan.collapsed{width:auto}
+  #roomPlan.collapsed #roomPlanSvg{display:none}
+  #roomPlan.collapsed .rpHead{margin-bottom:0}
+  #roomPlan .rpHead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim);margin-bottom:4px;cursor:pointer;user-select:none}
+  #roomPlan .rpHead:hover{color:#cfe0dd}
+  #roomPlan .rpTgl{background:none;border:0;color:#9fb3b0;font-size:13px;line-height:1;padding:2px 4px;cursor:pointer}
+  #roomPlanSvg{width:100%;height:118px;display:block}
+  .rpcell{fill:rgba(255,255,255,.02);stroke:#2a3b40;stroke-width:1.4;cursor:pointer;transition:.15s}
+  .rpcell:hover{fill:rgba(47,191,135,.08);stroke:var(--green)}
+  .rpcell.cur{fill:rgba(226,61,71,.16);stroke:var(--acc2)}
+  .rpcell.done{stroke:#3f5a52}
+  .rplab{font-size:10px;letter-spacing:.05em;fill:#cfe0dd;text-transform:uppercase;pointer-events:none}
+  .rpc{stroke:#243036;stroke-width:4;stroke-linecap:round}
+  .rpc.lit{stroke:rgba(47,191,135,.45)}
+  .rppawn{filter:drop-shadow(0 0 6px rgba(47,191,135,.6))}
+  @media (max-height:520px){#roomPlan{width:192px;padding:6px 8px}#roomPlanSvg{height:92px}}
   /* OBJECTIFS PÉDAGOGIQUES */
   .objCard{background:#12181a;border:1px solid #25353a;border-radius:14px;padding:24px 28px;max-width:660px;width:100%;max-height:88vh;overflow:auto;text-align:left}
   .objHdr{font-size:22px;color:#fff;font-weight:800;margin-bottom:18px;letter-spacing:.02em}
@@ -523,6 +544,11 @@
 
   <div id="stage" style="display:none"></div>
 
+  <div id="roomPlan" class="collapsed">
+    <div class="rpHead" onclick="toggleRoomPlan()"><span>🗺️ Plan du pavillon</span><button class="rpTgl" title="Réduire / agrandir">▸</button></div>
+    <svg id="roomPlanSvg" viewBox="0 0 240 156"></svg>
+  </div>
+
   <div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()"><div id="modalContent" onclick="if(event.target===this)closeModal()"></div></div>
 
   <div id="transport" class="scroll">
@@ -633,6 +659,7 @@ function startGame(){
   document.getElementById('title').style.display='none';
   document.getElementById('topbar').style.display='flex';
   document.getElementById('stage').style.display='flex';
+  var _rp=document.getElementById('roomPlan');if(_rp)_rp.classList.add('show');
   document.getElementById('rooms').innerHTML=GAME.rooms.map(r=>`<button class="roomBtn" data-r="${r.id}" onclick="goRoom('${r.id}')">${r.label}</button>`).join('');
   document.getElementById('cTot').textContent='/ '+TOTAL+' indices';
   buildStage(); goRoom(GAME.rooms[0].id);
@@ -671,10 +698,33 @@ function buildStage(){
   }).join('')+`<button class="navArrow left" onclick="prevRoom()">‹</button><button class="navArrow right" onclick="nextRoom()">›</button>`;
   refreshHotspots();
 }
+/* ===== Plan des pièces (mini-carte, cliquable) ===== */
+const PLAN_POS={chambre:[20,14],sdb:[135,14],salon:[20,64],cuisine:[135,64],jardin:[75,116]};
+const PLAN_LINKS=[['salon','chambre'],['salon','cuisine'],['cuisine','sdb'],['cuisine','jardin'],['salon','jardin'],['chambre','sdb']];
+let planVisited=new Set();
+function drawRoomPlan(){
+  var svg=document.getElementById('roomPlanSvg'); if(!svg)return;
+  var cw=105,ch=36,pos=PLAN_POS,s='';
+  PLAN_LINKS.forEach(function(L){var A=pos[L[0]],B=pos[L[1]];if(!A||!B)return;
+    var lit=(state.currentRoom===L[0]||state.currentRoom===L[1])?'lit':'';
+    s+='<line class="rpc '+lit+'" x1="'+(A[0]+cw/2)+'" y1="'+(A[1]+ch/2)+'" x2="'+(B[0]+cw/2)+'" y2="'+(B[1]+ch/2)+'"/>';});
+  GAME.rooms.forEach(function(r){var p=pos[r.id];if(!p)return;
+    var cls='rpcell'+(r.id===state.currentRoom?' cur':'')+(planVisited.has(r.id)&&r.id!==state.currentRoom?' done':'');
+    s+='<rect class="'+cls+'" x="'+p[0]+'" y="'+p[1]+'" width="'+cw+'" height="'+ch+'" rx="5" onclick="planGoto(\''+r.id+'\')"></rect>';
+    s+='<text class="rplab" x="'+(p[0]+cw/2)+'" y="'+(p[1]+ch/2+4)+'" text-anchor="middle">'+r.label+'</text>';});
+  var pc=pos[state.currentRoom];
+  if(pc)s+='<g class="rppawn" transform="translate('+(pc[0]+15)+','+(pc[1]+ch/2)+')"><circle r="8" fill="#0e1517" stroke="#2fbf87" stroke-width="1.5"></circle><text x="0" y="3.5" text-anchor="middle" font-size="10">🔍</text></g>';
+  svg.innerHTML=s;
+}
+function toggleRoomPlan(){var p=document.getElementById('roomPlan');if(!p)return;p.classList.toggle('collapsed');
+  var b=p.querySelector('.rpTgl');if(b)b.textContent=p.classList.contains('collapsed')?'▸':'▾';}
+function planGoto(id){goRoom(id);var p=document.getElementById('roomPlan');if(p&&!p.classList.contains('collapsed'))toggleRoomPlan();}
+
 function goRoom(id){
   state.currentRoom=id;
   document.querySelectorAll('.room').forEach(el=>el.classList.toggle('active',el.id==='room-'+id));
   document.querySelectorAll('.roomBtn').forEach(b=>b.classList.toggle('active',b.dataset.r===id));
+  planVisited.add(id); drawRoomPlan();
   layoutStage();
 }
 // Cadre 16:9 letterboxé : garantit que les hotspots (en %) tombent toujours au bon endroit

@@ -1,5 +1,5 @@
 /* TOXICITY — service worker (offline app shell) */
-const CACHE = 'toxicity-v5';
+const CACHE = 'toxicity-v6';
 const CORE = [
   './',
   './index.html',
@@ -22,7 +22,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return; // laisse passer les QR codes distants
+  if (url.origin !== location.origin) return;
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
       const copy = resp.clone();
